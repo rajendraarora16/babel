@@ -22,7 +22,7 @@ commander.option(
   "comma-separated list of plugin names",
   collect,
 );
-commander.option("--config-file [path]", "Path a to .babelrc file to use");
+commander.option("--config-file [path]", "Path to a .babelrc file to use");
 commander.option(
   "--env-name [name]",
   "The name of the 'env' to use when loading configs and plugins. " +
@@ -81,7 +81,7 @@ commander.option(
   "print a comment after any injected non-user code",
 );
 
-// General soucemap formatting.
+// General source map formatting.
 commander.option("-s, --source-maps [true|false|inline|both]", "", booleanify);
 commander.option(
   "--source-map-target [string]",

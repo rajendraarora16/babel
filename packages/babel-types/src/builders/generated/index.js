@@ -612,6 +612,18 @@ export function OptionalMemberExpression(...args: Array<any>): Object {
   return builder("OptionalMemberExpression", ...args);
 }
 export { OptionalMemberExpression as optionalMemberExpression };
+export function PipelineTopicExpression(...args: Array<any>): Object {
+  return builder("PipelineTopicExpression", ...args);
+}
+export { PipelineTopicExpression as pipelineTopicExpression };
+export function PipelineBareFunction(...args: Array<any>): Object {
+  return builder("PipelineBareFunction", ...args);
+}
+export { PipelineBareFunction as pipelineBareFunction };
+export function PipelinePrimaryTopicReference(...args: Array<any>): Object {
+  return builder("PipelinePrimaryTopicReference", ...args);
+}
+export { PipelinePrimaryTopicReference as pipelinePrimaryTopicReference };
 export function OptionalCallExpression(...args: Array<any>): Object {
   return builder("OptionalCallExpression", ...args);
 }
@@ -620,6 +632,10 @@ export function ClassPrivateProperty(...args: Array<any>): Object {
   return builder("ClassPrivateProperty", ...args);
 }
 export { ClassPrivateProperty as classPrivateProperty };
+export function ClassPrivateMethod(...args: Array<any>): Object {
+  return builder("ClassPrivateMethod", ...args);
+}
+export { ClassPrivateMethod as classPrivateMethod };
 export function Import(...args: Array<any>): Object {
   return builder("Import", ...args);
 }
@@ -798,6 +814,11 @@ export function TSOptionalType(...args: Array<any>): Object {
 }
 export { TSOptionalType as tsOptionalType };
 export { TSOptionalType as tSOptionalType };
+export function TSRestType(...args: Array<any>): Object {
+  return builder("TSRestType", ...args);
+}
+export { TSRestType as tsRestType };
+export { TSRestType as tSRestType };
 export function TSUnionType(...args: Array<any>): Object {
   return builder("TSUnionType", ...args);
 }

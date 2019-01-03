@@ -675,6 +675,24 @@ export function assertOptionalMemberExpression(
 ): void {
   assert("OptionalMemberExpression", node, opts);
 }
+export function assertPipelineTopicExpression(
+  node: Object,
+  opts?: Object = {},
+): void {
+  assert("PipelineTopicExpression", node, opts);
+}
+export function assertPipelineBareFunction(
+  node: Object,
+  opts?: Object = {},
+): void {
+  assert("PipelineBareFunction", node, opts);
+}
+export function assertPipelinePrimaryTopicReference(
+  node: Object,
+  opts?: Object = {},
+): void {
+  assert("PipelinePrimaryTopicReference", node, opts);
+}
 export function assertOptionalCallExpression(
   node: Object,
   opts?: Object = {},
@@ -686,6 +704,12 @@ export function assertClassPrivateProperty(
   opts?: Object = {},
 ): void {
   assert("ClassPrivateProperty", node, opts);
+}
+export function assertClassPrivateMethod(
+  node: Object,
+  opts?: Object = {},
+): void {
+  assert("ClassPrivateMethod", node, opts);
 }
 export function assertImport(node: Object, opts?: Object = {}): void {
   assert("Import", node, opts);
@@ -827,6 +851,9 @@ export function assertTSTupleType(node: Object, opts?: Object = {}): void {
 }
 export function assertTSOptionalType(node: Object, opts?: Object = {}): void {
   assert("TSOptionalType", node, opts);
+}
+export function assertTSRestType(node: Object, opts?: Object = {}): void {
+  assert("TSRestType", node, opts);
 }
 export function assertTSUnionType(node: Object, opts?: Object = {}): void {
   assert("TSUnionType", node, opts);

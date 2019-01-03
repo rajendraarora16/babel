@@ -369,8 +369,18 @@ export default class StatementParser extends ExpressionParser {
   parseDoStatement(node: N.DoWhileStatement): N.DoWhileStatement {
     this.next();
     this.state.labels.push(loopLabel);
-    node.body = this.parseStatement(false);
+
+    node.body =
+      // For the smartPipelines plugin: Disable topic references from outer
+      // contexts within the loop body. They are permitted in test expressions,
+      // outside of the loop body.
+      this.withTopicForbiddingContext(() =>
+        // Parse the loop body's body.
+        this.parseStatement(false),
+      );
+
     this.state.labels.pop();
+
     this.expect(tt._while);
     node.test = this.parseParenExpression();
     this.eat(tt.semi);
@@ -391,7 +401,6 @@ export default class StatementParser extends ExpressionParser {
 
     let forAwait = false;
     if (this.state.inAsync && this.isContextual("await")) {
-      this.expectPlugin("asyncGenerators");
       forAwait = true;
       this.next();
     }
@@ -556,10 +565,19 @@ export default class StatementParser extends ExpressionParser {
         this.checkLVal(clause.param, true, clashes, "catch clause");
         this.expect(tt.parenR);
       } else {
-        this.expectPlugin("optionalCatchBinding");
         clause.param = null;
       }
-      clause.body = this.parseBlock();
+
+      clause.body =
+        // For the smartPipelines plugin: Disable topic references from outer
+        // contexts within the function body. They are permitted in function
+        // default-parameter expressions, which are part of the outer context,
+        // outside of the function body.
+        this.withTopicForbiddingContext(() =>
+          // Parse the catch clause's body.
+          this.parseBlock(false),
+        );
+
       node.handler = this.finishNode(clause, "CatchClause");
     }
 
@@ -587,8 +605,18 @@ export default class StatementParser extends ExpressionParser {
     this.next();
     node.test = this.parseParenExpression();
     this.state.labels.push(loopLabel);
-    node.body = this.parseStatement(false);
+
+    node.body =
+      // For the smartPipelines plugin:
+      // Disable topic references from outer contexts within the loop body.
+      // They are permitted in test expressions, outside of the loop body.
+      this.withTopicForbiddingContext(() =>
+        // Parse loop body.
+        this.parseStatement(false),
+      );
+
     this.state.labels.pop();
+
     return this.finishNode(node, "WhileStatement");
   }
 
@@ -598,7 +626,17 @@ export default class StatementParser extends ExpressionParser {
     }
     this.next();
     node.object = this.parseParenExpression();
-    node.body = this.parseStatement(false);
+
+    node.body =
+      // For the smartPipelines plugin:
+      // Disable topic references from outer contexts within the function body.
+      // They are permitted in function default-parameter expressions, which are
+      // part of the outer context, outside of the function body.
+      this.withTopicForbiddingContext(() =>
+        // Parse the statement body.
+        this.parseStatement(false),
+      );
+
     return this.finishNode(node, "WithStatement");
   }
 
@@ -621,8 +659,8 @@ export default class StatementParser extends ExpressionParser {
     const kind = this.state.type.isLoop
       ? "loop"
       : this.match(tt._switch)
-        ? "switch"
-        : null;
+      ? "switch"
+      : null;
     for (let i = this.state.labels.length - 1; i >= 0; i--) {
       const label = this.state.labels[i];
       if (label.statementStart === node.start) {
@@ -755,8 +793,18 @@ export default class StatementParser extends ExpressionParser {
     this.expect(tt.semi);
     node.update = this.match(tt.parenR) ? null : this.parseExpression();
     this.expect(tt.parenR);
-    node.body = this.parseStatement(false);
+
+    node.body =
+      // For the smartPipelines plugin: Disable topic references from outer
+      // contexts within the loop body. They are permitted in test expressions,
+      // outside of the loop body.
+      this.withTopicForbiddingContext(() =>
+        // Parse the loop body.
+        this.parseStatement(false),
+      );
+
     this.state.labels.pop();
+
     return this.finishNode(node, "ForStatement");
   }
 
@@ -780,8 +828,18 @@ export default class StatementParser extends ExpressionParser {
     node.left = init;
     node.right = this.parseExpression();
     this.expect(tt.parenR);
-    node.body = this.parseStatement(false);
+
+    node.body =
+      // For the smartPipelines plugin:
+      // Disable topic references from outer contexts within the loop body.
+      // They are permitted in test expressions, outside of the loop body.
+      this.withTopicForbiddingContext(() =>
+        // Parse loop body.
+        this.parseStatement(false),
+      );
+
     this.state.labels.pop();
+
     return this.finishNode(node, type);
   }
 
@@ -838,12 +896,13 @@ export default class StatementParser extends ExpressionParser {
   parseFunction<T: N.NormalFunction>(
     node: T,
     isStatement: boolean,
-    allowExpressionBody?: boolean,
-    isAsync?: boolean,
-    optionalId?: boolean,
+    allowExpressionBody?: boolean = false,
+    isAsync?: boolean = false,
+    optionalId?: boolean = false,
   ): T {
     const oldInFunc = this.state.inFunction;
     const oldInMethod = this.state.inMethod;
+    const oldInAsync = this.state.inAsync;
     const oldInGenerator = this.state.inGenerator;
     const oldInClassProperty = this.state.inClassProperty;
     this.state.inFunction = true;
@@ -853,9 +912,6 @@ export default class StatementParser extends ExpressionParser {
     this.initFunction(node, isAsync);
 
     if (this.match(tt.star)) {
-      if (node.async) {
-        this.expectPlugin("asyncGenerators");
-      }
       node.generator = true;
       this.next();
     }
@@ -877,21 +933,36 @@ export default class StatementParser extends ExpressionParser {
     // valid because yield is parsed as if it was outside the generator.
     // Therefore, this.state.inGenerator is set before or after parsing the
     // function id according to the "isStatement" parameter.
-    if (!isStatement) this.state.inGenerator = node.generator;
+    // The same applies to await & async functions.
+    if (!isStatement) {
+      this.state.inAsync = isAsync;
+      this.state.inGenerator = node.generator;
+    }
     if (this.match(tt.name) || this.match(tt._yield)) {
       node.id = this.parseBindingIdentifier();
     }
-    if (isStatement) this.state.inGenerator = node.generator;
+    if (isStatement) {
+      this.state.inAsync = isAsync;
+      this.state.inGenerator = node.generator;
+    }
 
     this.parseFunctionParams(node);
-    this.parseFunctionBodyAndFinish(
-      node,
-      isStatement ? "FunctionDeclaration" : "FunctionExpression",
-      allowExpressionBody,
-    );
+
+    // For the smartPipelines plugin: Disable topic references from outer
+    // contexts within the function body. They are permitted in test
+    // expressions, outside of the function body.
+    this.withTopicForbiddingContext(() => {
+      // Parse the function body.
+      this.parseFunctionBodyAndFinish(
+        node,
+        isStatement ? "FunctionDeclaration" : "FunctionExpression",
+        allowExpressionBody,
+      );
+    });
 
     this.state.inFunction = oldInFunc;
     this.state.inMethod = oldInMethod;
+    this.state.inAsync = oldInAsync;
     this.state.inGenerator = oldInGenerator;
     this.state.inClassProperty = oldInClassProperty;
 
@@ -962,44 +1033,49 @@ export default class StatementParser extends ExpressionParser {
 
     this.expect(tt.braceL);
 
-    while (!this.eat(tt.braceR)) {
-      if (this.eat(tt.semi)) {
-        if (decorators.length > 0) {
+    // For the smartPipelines plugin: Disable topic references from outer
+    // contexts within the class body. They are permitted in test expressions,
+    // outside of the class body.
+    this.withTopicForbiddingContext(() => {
+      while (!this.eat(tt.braceR)) {
+        if (this.eat(tt.semi)) {
+          if (decorators.length > 0) {
+            this.raise(
+              this.state.lastTokEnd,
+              "Decorators must not be followed by a semicolon",
+            );
+          }
+          continue;
+        }
+
+        if (this.match(tt.at)) {
+          decorators.push(this.parseDecorator());
+          continue;
+        }
+
+        const member = this.startNode();
+
+        // steal the decorators if there are any
+        if (decorators.length) {
+          member.decorators = decorators;
+          this.resetStartLocationFromNode(member, decorators[0]);
+          decorators = [];
+        }
+
+        this.parseClassMember(classBody, member, state);
+
+        if (
+          member.kind === "constructor" &&
+          member.decorators &&
+          member.decorators.length > 0
+        ) {
           this.raise(
-            this.state.lastTokEnd,
-            "Decorators must not be followed by a semicolon",
+            member.start,
+            "Decorators can't be used with a constructor. Did you mean '@dec class { ... }'?",
           );
         }
-        continue;
       }
-
-      if (this.match(tt.at)) {
-        decorators.push(this.parseDecorator());
-        continue;
-      }
-
-      const member = this.startNode();
-
-      // steal the decorators if there are any
-      if (decorators.length) {
-        member.decorators = decorators;
-        this.resetStartLocationFromNode(member, decorators[0]);
-        decorators = [];
-      }
-
-      this.parseClassMember(classBody, member, state);
-
-      if (
-        member.kind === "constructor" &&
-        member.decorators &&
-        member.decorators.length > 0
-      ) {
-        this.raise(
-          member.start,
-          "Decorators can't be used with a constructor. Did you mean '@dec class { ... }'?",
-        );
-      }
-    }
+    });
 
     if (decorators.length) {
       this.raise(
@@ -1153,11 +1229,7 @@ export default class StatementParser extends ExpressionParser {
       }
     } else if (isSimple && key.name === "async" && !this.isLineTerminator()) {
       // an async method
-      const isGenerator = this.match(tt.star);
-      if (isGenerator) {
-        this.expectPlugin("asyncGenerators");
-        this.next();
-      }
+      const isGenerator = this.eat(tt.star);
 
       method.kind = "method";
       // The so-called parsed name would have been "async": get the real name.

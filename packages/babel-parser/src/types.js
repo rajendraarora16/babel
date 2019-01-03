@@ -398,7 +398,7 @@ export type ObjectMemberBase = NodeBase & {
   decorators: $ReadOnlyArray<Decorator>,
   kind?: "get" | "set" | "method",
   method: boolean, // TODO: Not in spec
-
+  typeParameters?: ?TypeParameterInstantiationBase, // TODO: Not in spec
   variance?: ?FlowVariance, // TODO: Not in spec
 };
 
@@ -565,6 +565,38 @@ export type SequenceExpression = NodeBase & {
   type: "SequenceExpression",
   expressions: $ReadOnlyArray<Expression>,
 };
+
+// Pipelines
+
+export type PipelineBody = NodeBase & {
+  type: "PipelineBody",
+};
+
+export type PipelineBareFunctionBody = NodeBase & {
+  type: "PipelineBareFunctionBody",
+  callee: Expression,
+};
+
+export type PipelineBareConstructorBody = NodeBase & {
+  type: "PipelineBareConstructorBody",
+  callee: Expression,
+};
+
+export type PipelineBareAwaitedFunctionBody = NodeBase & {
+  type: "PipelineBareAwaitedFunctionBody",
+  callee: Expression,
+};
+
+export type PipelineTopicBody = NodeBase & {
+  type: "PipelineTopicBody",
+  expression: Expression,
+};
+
+export type PipelineStyle =
+  | "PipelineBareFunction"
+  | "PipelineBareConstructor"
+  | "PipelineBareAwaitedFunction"
+  | "PipelineTopicExpression";
 
 // Template Literals
 
@@ -1037,7 +1069,7 @@ export type TsSignatureDeclaration =
 
 export type TsSignatureDeclarationOrIndexSignatureBase = NodeBase & {
   // Not using TypeScript's "ParameterDeclaration" here, since it's inconsistent with regular functions.
-  parameters: $ReadOnlyArray<Identifier | RestElement>,
+  parameters: $ReadOnlyArray<Identifier | RestElement | ObjectPattern>,
   typeAnnotation: ?TsTypeAnnotation,
 };
 
@@ -1105,6 +1137,7 @@ export type TsType =
   | TsArrayType
   | TsTupleType
   | TsOptionalType
+  | TsRestType
   | TsUnionOrIntersectionType
   | TsConditionalType
   | TsInferType
@@ -1124,6 +1157,7 @@ export type TsKeywordTypeType =
   | "TSNumberKeyword"
   | "TSObjectKeyword"
   | "TSBooleanKeyword"
+  | "TSBigIntKeyword"
   | "TSStringKeyword"
   | "TSSymbolKeyword"
   | "TSVoidKeyword"
@@ -1187,6 +1221,11 @@ export type TsTupleType = TsTypeBase & {
 
 export type TsOptionalType = TsTypeBase & {
   type: "TSOptionalType",
+  typeAnnotation: TsType,
+};
+
+export type TsRestType = TsTypeBase & {
+  type: "TSRestType",
   typeAnnotation: TsType,
 };
 

@@ -98,7 +98,7 @@ function update_whitelist(summary) {
       );
     });
 
-  const newLines = disallowed
+  const newLines = summary.disallowed.failure
     .map(({ test }) => test.file)
     .filter(test => oldLines.indexOf(test) === -1);
 
@@ -109,12 +109,10 @@ function update_whitelist(summary) {
 
 const options = {
   plugins: [
-    "asyncGenerators",
     "dynamicImport",
     ["flow", { all: true }],
     "flowComments",
     "jsx",
-    "objectRestSpread",
     "classPrivateProperties",
   ],
   sourceType: "module",

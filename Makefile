@@ -1,6 +1,6 @@
 MAKEFLAGS = -j1
-FLOW_COMMIT = bea8b83f50f597454941d2a7ecef6e93a881e576
-TEST262_COMMIT = 06c2f019019cf7850923de4d56828e6dfd9212b8
+FLOW_COMMIT = e192e1a4793dd8e43415fbfe8046d832cb513c8b
+TEST262_COMMIT = 238c88d4a084d9928372954e2fec54af2c951281
 
 # Fix color output until TravisCI fixes https://github.com/travis-ci/travis-ci/issues/7967
 export FORCE_COLOR = true
@@ -27,6 +27,12 @@ build-standalone:
 
 build-preset-env-standalone:
 	./node_modules/.bin/gulp build-babel-preset-env-standalone
+
+prepublish-build-standalone:
+	BABEL_ENV=production IS_PUBLISH=true ./node_modules/.bin/gulp build-babel-standalone
+
+prepublish-build-preset-env-standalone:
+	BABEL_ENV=production IS_PUBLISH=true ./node_modules/.bin/gulp build-babel-preset-env-standalone
 
 build-dist: build
 	cd packages/babel-polyfill; \
@@ -82,7 +88,7 @@ test-ci-coverage:
 bootstrap-flow:
 	rm -rf ./build/flow
 	mkdir -p ./build
-	git clone --branch=master --single-branch --shallow-since=2017-01-01 https://github.com/facebook/flow.git ./build/flow
+	git clone --branch=master --single-branch --shallow-since=2018-11-01 https://github.com/facebook/flow.git ./build/flow
 	cd build/flow && git checkout $(FLOW_COMMIT)
 
 test-flow:
@@ -96,7 +102,7 @@ test-flow-update-whitelist:
 bootstrap-test262:
 	rm -rf ./build/test262
 	mkdir -p ./build
-	git clone --branch=master --single-branch --shallow-since=2017-01-01 https://github.com/tc39/test262.git ./build/test262
+	git clone --branch=master --single-branch --shallow-since=2018-11-01 https://github.com/tc39/test262.git ./build/test262
 	cd build/test262 && git checkout $(TEST262_COMMIT)
 
 test-test262:
@@ -124,8 +130,7 @@ prepublish:
 	make test
 
 publish: prepublish
-	# --only-explicit-updates
-	./node_modules/.bin/lerna publish
+	./node_modules/.bin/lerna publish --force-publish="@babel/runtime,@babel/runtime-corejs2,@babel/standalone,@babel/preset-env-standalone" --require-scripts
 	make clean
 
 bootstrap: clean-all

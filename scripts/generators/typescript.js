@@ -11,18 +11,18 @@ interface BaseComment {
   start: number;
   end: number;
   loc: SourceLocation;
-  type: "BlockComment" | "LineComment";
+  type: "CommentBlock" | "CommentLine";
 }
 
-export interface BlockComment extends BaseComment {
-  type: "BlockComment";
+export interface CommentBlock extends BaseComment {
+  type: "CommentBlock";
 }
 
-export interface LineComment extends BaseComment {
-  type: "LineComment";
+export interface CommentLine extends BaseComment {
+  type: "CommentLine";
 }
 
-export type Comment = BlockComment | LineComment;
+export type Comment = CommentBlock | CommentLine;
 
 export interface SourceLocation {
   start: {
@@ -111,6 +111,8 @@ for (let i = 0; i < t.TYPES.length; i++) {
 
   if (t.NODE_FIELDS[t.TYPES[i]]) {
     decl += `node is ${t.TYPES[i]};`;
+  } else if (t.FLIPPED_ALIAS_KEYS[t.TYPES[i]]) {
+    decl += `node is ${t.TYPES[i]};`;
   } else {
     decl += `boolean;`;
   }
@@ -158,6 +160,13 @@ for (const type in t.FLIPPED_ALIAS_KEYS) {
     .map(type => `${type}`)
     .join(" | ")};\n`;
 }
+code += "\n";
+
+code += "export interface Aliases {\n";
+for (const type in t.FLIPPED_ALIAS_KEYS) {
+  code += `  ${type}: ${type};\n`;
+}
+code += "}\n\n";
 
 code += lines.join("\n") + "\n";
 
